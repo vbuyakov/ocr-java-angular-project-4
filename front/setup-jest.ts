@@ -1,5 +1,23 @@
 import 'jest-preset-angular/setup-jest';
 
+/* Suppress CSS parsing errors from jsdom */
+const originalError = console.error;
+const originalWarn = console.warn;
+console.error = (...args: any[]) => {
+  const errorMessage = args.join(' ');
+  if (errorMessage.includes('Could not parse CSS stylesheet')) {
+    return;
+  }
+  originalError.apply(console, args);
+};
+console.warn = (...args: any[]) => {
+  const warnMessage = args.join(' ');
+  if (warnMessage.includes('Could not parse CSS stylesheet')) {
+    return;
+  }
+  originalWarn.apply(console, args);
+};
+
 /* global mocks for jsdom */
 const mock = () => {
   let storage: { [key: string]: string } = {};
