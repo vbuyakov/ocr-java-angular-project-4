@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -8,6 +8,7 @@ import { Session } from '../../../../core/models/session.interface';
 import { SessionApiService } from '../../../../core/service/session-api.service';
 import { MaterialModule } from "../../../../shared/material.module";
 import { CommonModule } from "@angular/common";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 @Component({
   selector: 'app-form',
@@ -23,13 +24,14 @@ export class FormComponent implements OnInit {
   private sessionService = inject(SessionService);
   private teacherService = inject(TeacherService);
   private router = inject(Router);
+  private destroyRef = inject(DestroyRef);
 
   public onUpdate: boolean = false;
   public sessionForm: FormGroup | undefined;
   public teachers$ = this.teacherService.all();
   private id: string | undefined;
 
-  ngOnInit(): void {
+  public ngOnInit(): void {
     if (!this.sessionService.sessionInformation!.admin) {
       this.router.navigate(['/sessions']);
     }
@@ -39,7 +41,10 @@ export class FormComponent implements OnInit {
       this.id = this.route.snapshot.paramMap.get('id')!;
       this.sessionApiService
         .detail(this.id)
-        .subscribe((session: Session) => this.initForm(session));
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((session: Session): void => {
+          this.initForm(session);
+        });
     } else {
       this.initForm();
     }
@@ -51,11 +56,17 @@ export class FormComponent implements OnInit {
     if (!this.onUpdate) {
       this.sessionApiService
         .create(session)
-        .subscribe((_: Session) => this.exitPage('Session created !'));
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((_: Session): void => {
+          this.exitPage('Session created !');
+        });
     } else {
       this.sessionApiService
         .update(this.id!, session)
-        .subscribe((_: Session) => this.exitPage('Session updated !'));
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((_: Session): void => {
+          this.exitPage('Session updated !');
+        });
     }
   }
 
@@ -87,4 +98,5 @@ export class FormComponent implements OnInit {
     this.matSnackBar.open(message, 'Close', { duration: 3000 });
     this.router.navigate(['sessions']);
   }
+
 }
