@@ -402,7 +402,7 @@ describe('Sessions spec', () => {
     cy.url().should('include', '/sessions')
   })
 
-  it('Participate in session', () => {
+  it('Regular user can participate in session', () => {
     cy.visit('/login')
 
     cy.intercept('POST', '/api/auth/login', {
@@ -414,12 +414,22 @@ describe('Sessions spec', () => {
         method: 'GET',
         url: '/api/session',
       },
-      [mockSessions.single]
+      [{ ...mockSessions.single, users: [] }]
     ).as('session')
 
-    const sessionWithUser = { ...mockSessions.single, users: [] }
-    cy.intercept('GET', '/api/session/1', {
-      body: sessionWithUser
+    // Initial state: user is not participating
+    const sessionWithoutUser = { ...mockSessions.single, users: [] }
+    const sessionWithUser = { ...mockSessions.single, users: [2] }
+    
+    // Use a counter to return different responses for initial load and refresh
+    let callCount = 0
+    cy.intercept('GET', '/api/session/1', (req) => {
+      callCount++
+      if (callCount === 1) {
+        req.reply({ body: sessionWithoutUser })
+      } else {
+        req.reply({ body: sessionWithUser })
+      }
     }).as('sessionDetail')
 
     cy.intercept('POST', '/api/session/1/participate/2', {
@@ -443,17 +453,26 @@ describe('Sessions spec', () => {
 
     cy.url().should('include', '/sessions/detail/1')
 
+    // Verify initial state: Participate button is visible
+    cy.contains('Participate').should('be.visible')
+    cy.contains('0 attendees').should('be.visible')
+
     // Click Participate button
     cy.contains('Participate').click()
     cy.wait('@participate')
 
-    // Session should be refreshed (we'll intercept the new call)
-    cy.intercept('GET', '/api/session/1', {
-      body: { ...sessionWithUser, users: [2] }
-    }).as('sessionDetailAfter')
+    // Wait for session refresh after participation
+    cy.wait('@sessionDetail')
+
+    // Verify UI updated: "Do not participate" button is now visible
+    cy.contains('Do not participate').should('be.visible')
+    cy.contains('Participate').should('not.exist')
+    
+    // Verify attendee count updated
+    cy.contains('1 attendees').should('be.visible')
   })
 
-  it('Unparticipate from session', () => {
+  it('Regular user can unparticipate from session', () => {
     cy.visit('/login')
 
     cy.intercept('POST', '/api/auth/login', {
@@ -468,9 +487,19 @@ describe('Sessions spec', () => {
       [{ ...mockSessions.single, users: [2] }]
     ).as('session')
 
+    // Initial state: user is already participating
     const sessionWithUser = { ...mockSessions.single, users: [2] }
-    cy.intercept('GET', '/api/session/1', {
-      body: sessionWithUser
+    const sessionWithoutUser = { ...mockSessions.single, users: [] }
+    
+    // Use a counter to return different responses for initial load and refresh
+    let callCount = 0
+    cy.intercept('GET', '/api/session/1', (req) => {
+      callCount++
+      if (callCount === 1) {
+        req.reply({ body: sessionWithUser })
+      } else {
+        req.reply({ body: sessionWithoutUser })
+      }
     }).as('sessionDetail')
 
     cy.intercept('DELETE', '/api/session/1/participate/2', {
@@ -494,12 +523,24 @@ describe('Sessions spec', () => {
 
     cy.url().should('include', '/sessions/detail/1')
 
-    // Should see "Do not participate" button
+    // Verify initial state: "Do not participate" button is visible
     cy.contains('Do not participate').should('be.visible')
+    cy.contains('Participate').should('not.exist')
+    cy.contains('1 attendees').should('be.visible')
 
-    // Click Unparticipate button
+    // Click "Do not participate" button
     cy.contains('Do not participate').click()
     cy.wait('@unParticipate')
+
+    // Wait for session refresh after unparticipating
+    cy.wait('@sessionDetail')
+
+    // Verify UI updated: "Participate" button is now visible
+    cy.contains('Participate').should('be.visible')
+    cy.contains('Do not participate').should('not.exist')
+    
+    // Verify attendee count updated
+    cy.contains('0 attendees').should('be.visible')
   })
 
   it('Back button functionality on detail page', () => {
