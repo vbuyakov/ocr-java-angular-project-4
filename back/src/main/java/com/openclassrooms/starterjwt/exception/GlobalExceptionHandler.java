@@ -73,6 +73,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
+    @ExceptionHandler(NumberFormatException.class)
+    public ResponseEntity<Map<String, String>> handleNumberFormatException(NumberFormatException ex) {
+        Map<String, String> error = new HashMap<>();
+        error.put("message", "Invalid ID format");
+        return ResponseEntity.badRequest().body(error);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
         Map<String, String> errors = new HashMap<>();
