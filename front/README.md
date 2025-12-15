@@ -6,7 +6,7 @@ This project was generated using [Angular CLI](https://github.com/angular/angula
 
 Git clone:
 
-> git clone https://github.com/OpenClassrooms-Student-Center/P5-Full-Stack-testing
+> git clone https://github.com/vbuyakov/ocr-java-angular-project-4/tree/main yoga
 
 Go inside folder:
 
@@ -14,7 +14,7 @@ Go inside folder:
 
 Install dependencies:
 
-> npm install
+> npm ci
 
 Launch Front-end:
 
@@ -35,7 +35,7 @@ Generate coverage report (you should launch e2e test before):
 
 Report is available here:
 
-> front/coverage/lcov-report/index.html
+> coverage/lcov-report/index.html
 
 #### Unitary test
 
