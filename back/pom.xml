@@ -188,13 +188,43 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
 
-            <!-- Surefire -->
+            <!-- Surefire : tests unitaires uniquement -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <useModulePath>false</useModulePath>
+                    <!-- Ne PAS exécuter les tests d'intégration ici -->
+                    <excludes>
+                        <exclude>**/*IT.java</exclude>
+                        <exclude>**/*ITCase.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
                 </configuration>
+            </plugin>
+
+            <!-- Failsafe : tests d'intégration -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <!-- Adapter aux noms actuels des tests d'intégration -->
+                    <includes>
+                        <include>**/*IT.java</include>
+                        <include>**/*ITCase.java</include>
+                        <include>**/*IntegrationTest.java</include>
+                    </includes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>integration-tests</id>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
             <!-- Jacoco -->
@@ -202,15 +232,27 @@
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.12</version>
+                <!-- Ne pas compter la "plomberie" (DTO, modèles, mappers, payloads, exceptions) -->
+                <configuration>
+                    <excludes>
+                        <exclude>com/openclassrooms/starterjwt/dto/**</exclude>
+                        <exclude>com/openclassrooms/starterjwt/models/**</exclude>
+                        <exclude>com/openclassrooms/starterjwt/mapper/**</exclude>
+                        <exclude>com/openclassrooms/starterjwt/payload/**</exclude>
+                        <exclude>com/openclassrooms/starterjwt/exception/**</exclude>
+                    </excludes>
+                </configuration>
                 <executions>
                     <execution>
+                        <id>prepare-agent</id>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
                     </execution>
                     <execution>
                         <id>report</id>
-                        <phase>test</phase>
+                        <!-- Générer le rapport APRÈS les tests d'intégration (Failsafe) -->
+                        <phase>verify</phase>
                         <goals><goal>report</goal></goals>
                     </execution>
                 </executions>
